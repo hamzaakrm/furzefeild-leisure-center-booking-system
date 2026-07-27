@@ -2,7 +2,6 @@ package flc.system;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class BookingManager {
 
@@ -91,39 +90,38 @@ public class BookingManager {
     }
 
     // ATTEND + REVIEW
-    public void attendLesson(int bookingId) {
+    // Takes the rating/comment as parameters instead of reading them itself,
+    // so this class stays pure business logic with no console I/O, and is
+    // straightforward to unit test.
+    public boolean attendLesson(int bookingId, int rating, String comment) {
 
         Booking b = findBooking(bookingId);
 
-        if (b != null) {
-
-            if (b.getStatus() == BookingStatus.CANCELLED) {
-                System.out.println("Cannot attend a cancelled booking.");
-                return;
-            }
-
-            if (b.getStatus() == BookingStatus.ATTENDED) {
-                System.out.println("Already attended.");
-                return;
-            }
-
-            Scanner sc = new Scanner(System.in);
-
-            b.attendLesson();
-
-            System.out.print("Enter rating (1-5): ");
-            int rating = sc.nextInt();
-            sc.nextLine();
-
-            System.out.print("Enter review comment: ");
-            String comment = sc.nextLine();
-
-            b.addReview(comment, rating);
-
-            System.out.println("Lesson attended and reviewed.");
-        } else {
+        if (b == null) {
             System.out.println("Booking not found.");
+            return false;
         }
+
+        if (b.getStatus() == BookingStatus.CANCELLED) {
+            System.out.println("Cannot attend a cancelled booking.");
+            return false;
+        }
+
+        if (b.getStatus() == BookingStatus.ATTENDED) {
+            System.out.println("Already attended.");
+            return false;
+        }
+
+        if (rating < 1 || rating > 5) {
+            System.out.println("Rating must be between 1 and 5.");
+            return false;
+        }
+
+        b.attendLesson();
+        b.addReview(comment, rating);
+
+        System.out.println("Lesson attended and reviewed.");
+        return true;
     }
 
     // HELPER METHOD (important for clean design)
