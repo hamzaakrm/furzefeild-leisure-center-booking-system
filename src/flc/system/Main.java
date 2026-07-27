@@ -1,6 +1,7 @@
 package flc.system;
 
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
 
@@ -39,13 +40,23 @@ public class Main {
             System.out.println("0. Exit");
 
             System.out.print("Enter choice: ");
-            int choice = sc.nextInt();
+            Integer choice = readInt(sc);
+
+            if (choice == null) {
+                System.out.println("Please enter a number.");
+                continue;
+            }
 
             switch (choice) {
 
                 case 1:
                     System.out.print("Enter day (SATURDAY/SUNDAY): ");
-                    Day day = Day.valueOf(sc.next().toUpperCase());
+                    Day day = readDay(sc);
+
+                    if (day == null) {
+                        System.out.println("Invalid day. Please enter SATURDAY or SUNDAY.");
+                        break;
+                    }
 
                     List<Lesson> dayLessons = timetable.getLessonsByDay(day);
                     for (Lesson l : dayLessons) {
@@ -58,6 +69,9 @@ public class Main {
                     String exercise = sc.next();
 
                     List<Lesson> exLessons = timetable.getLessonsByExercise(exercise);
+                    if (exLessons.isEmpty()) {
+                        System.out.println("No lessons found for that exercise.");
+                    }
                     for (Lesson l : exLessons) {
                         System.out.println(l);
                     }
@@ -65,7 +79,12 @@ public class Main {
 
                 case 3:
                     System.out.print("Enter member ID (1-10): ");
-                    int mid = sc.nextInt();
+                    Integer mid = readInt(sc);
+
+                    if (mid == null) {
+                        System.out.println("Please enter a number.");
+                        break;
+                    }
 
                     Member member = null;
 
@@ -82,7 +101,12 @@ public class Main {
                     }
 
                     System.out.print("Enter lesson ID: ");
-                    int lid = sc.nextInt();
+                    Integer lid = readInt(sc);
+
+                    if (lid == null) {
+                        System.out.println("Please enter a number.");
+                        break;
+                    }
 
                     Lesson lesson = timetable.getLessonById(lid);
 
@@ -98,10 +122,20 @@ public class Main {
 
                 case 4:
                     System.out.print("Enter booking ID: ");
-                    int bid = sc.nextInt();
+                    Integer bid = readInt(sc);
+
+                    if (bid == null) {
+                        System.out.println("Please enter a number.");
+                        break;
+                    }
 
                     System.out.print("Enter new lesson ID: ");
-                    int newLid = sc.nextInt();
+                    Integer newLid = readInt(sc);
+
+                    if (newLid == null) {
+                        System.out.println("Please enter a number.");
+                        break;
+                    }
 
                     Lesson newLesson = timetable.getLessonById(newLid);
 
@@ -112,15 +146,42 @@ public class Main {
                     }
                     break;
 
-                case 5:
+                case 5: {
                     System.out.print("Enter booking ID: ");
-                    manager.cancelBooking(sc.nextInt());
-                    break;
+                    Integer cancelId = readInt(sc);
 
-                case 6:
-                    System.out.print("Enter booking ID: ");
-                    manager.attendLesson(sc.nextInt());
+                    if (cancelId == null) {
+                        System.out.println("Please enter a number.");
+                        break;
+                    }
+
+                    manager.cancelBooking(cancelId);
                     break;
+                }
+
+                case 6: {
+                    System.out.print("Enter booking ID: ");
+                    Integer attendId = readInt(sc);
+
+                    if (attendId == null) {
+                        System.out.println("Please enter a number.");
+                        break;
+                    }
+
+                    System.out.print("Enter rating (1-5): ");
+                    Integer rating = readInt(sc);
+
+                    if (rating == null || rating < 1 || rating > 5) {
+                        System.out.println("Rating must be a number between 1 and 5.");
+                        break;
+                    }
+
+                    System.out.print("Enter review comment: ");
+                    String comment = sc.nextLine();
+
+                    manager.attendLesson(attendId, rating, comment);
+                    break;
+                }
 
                 case 7:
                     manager.showBookings();
@@ -133,6 +194,33 @@ public class Main {
                 default:
                     System.out.println("Invalid choice.");
             }
+        }
+    }
+
+    /**
+     * Reads an integer from the scanner, returning null (instead of crashing)
+     * if the user enters something that isn't a whole number.
+     */
+    private static Integer readInt(Scanner sc) {
+        try {
+            int value = sc.nextInt();
+            sc.nextLine(); // consume the rest of the line
+            return value;
+        } catch (InputMismatchException e) {
+            sc.nextLine(); // discard the invalid input so we don't loop forever
+            return null;
+        }
+    }
+
+    /**
+     * Reads a Day from the scanner, returning null (instead of crashing)
+     * if the text doesn't match SATURDAY or SUNDAY.
+     */
+    private static Day readDay(Scanner sc) {
+        try {
+            return Day.valueOf(sc.next().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 }
