@@ -62,6 +62,14 @@ public class BookingManagerTest {
     }
 
     @Test
+    void testCancelUnknownBookingDoesNotThrow() {
+        BookingManager manager = new BookingManager();
+
+        // Should just print "Booking not found." and return, not throw.
+        assertDoesNotThrow(() -> manager.cancelBooking(999));
+    }
+
+    @Test
     void testAttendLesson() {
         BookingManager manager = new BookingManager();
 
@@ -70,11 +78,67 @@ public class BookingManagerTest {
 
         Booking b = manager.createBooking(m, lesson);
 
-        // simulate attendance (avoid Scanner)
-        b.attendLesson();
-        b.addReview("Good", 4);
+        boolean result = manager.attendLesson(b.getBookingId(), 4, "Good");
 
+        assertTrue(result);
         assertEquals(BookingStatus.ATTENDED, b.getStatus());
         assertNotNull(b.getReview());
+        assertEquals(4, b.getReview().getRating());
+    }
+
+    @Test
+    void testAttendLessonRejectsInvalidRating() {
+        BookingManager manager = new BookingManager();
+
+        Member m = new Member(1, "John");
+        Lesson lesson = new Lesson(1, "Yoga", Day.SATURDAY, TimeSlot.MORNING, 10);
+
+        Booking b = manager.createBooking(m, lesson);
+
+        boolean result = manager.attendLesson(b.getBookingId(), 9, "Too high");
+
+        assertFalse(result);
+        assertEquals(BookingStatus.BOOKED, b.getStatus());
+        assertNull(b.getReview());
+    }
+
+    @Test
+    void testChangeBookingSuccess() {
+        BookingManager manager = new BookingManager();
+
+        Member m = new Member(1, "John");
+        Lesson yoga = new Lesson(1, "Yoga", Day.SATURDAY, TimeSlot.MORNING, 10);
+        Lesson zumba = new Lesson(2, "Zumba", Day.SATURDAY, TimeSlot.AFTERNOON, 12);
+
+        Booking b = manager.createBooking(m, yoga);
+        manager.changeBooking(b.getBookingId(), zumba);
+
+        assertEquals(BookingStatus.CHANGED, b.getStatus());
+        assertEquals(zumba.getLessonId(), b.getLesson().getLessonId());
+        assertEquals(4, yoga.getAvailableSlots()); // member freed up their old slot
+        assertEquals(3, zumba.getAvailableSlots());
+    }
+
+    @Test
+    void testChangeBookingFailsWhenNewLessonFull() {
+        BookingManager manager = new BookingManager();
+
+        Lesson yoga = new Lesson(1, "Yoga", Day.SATURDAY, TimeSlot.MORNING, 10);
+        Lesson zumba = new Lesson(2, "Zumba", Day.SATURDAY, TimeSlot.AFTERNOON, 12);
+
+        // Fill zumba to capacity with other members first.
+        manager.createBooking(new Member(2, "A"), zumba);
+        manager.createBooking(new Member(3, "B"), zumba);
+        manager.createBooking(new Member(4, "C"), zumba);
+        manager.createBooking(new Member(5, "D"), zumba);
+
+        Member john = new Member(1, "John");
+        Booking b = manager.createBooking(john, yoga);
+
+        manager.changeBooking(b.getBookingId(), zumba);
+
+        // Should be unchanged since zumba was full.
+        assertEquals(BookingStatus.BOOKED, b.getStatus());
+        assertEquals(yoga.getLessonId(), b.getLesson().getLessonId());
     }
 }
